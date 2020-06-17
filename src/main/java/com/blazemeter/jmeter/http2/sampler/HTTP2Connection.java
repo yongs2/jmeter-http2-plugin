@@ -101,8 +101,26 @@ public class HTTP2Connection {
             sampleResult.setQueryString(requestBody.getPayload());
         }
 
-        HeadersFrame headersFrame = new HeadersFrame(new MetaData.Request(method, new HttpURI(url.toString()), HttpVersion.HTTP_2,
+        HttpURI httpUri = null;
+        String hostHeader = headers.get(HTTPConstants.HEADER_HOST);
+        if (hostHeader != null && hostHeader.isEmpty() == false) {
+            String host = url.getHost();
+            int port = url.getPort();
+            String[] Parts = hostHeader.split(":");
+            if (Parts.length == 1) {
+                host = Parts[0];
+            } else if (Parts.length == 2) {
+                host = Parts[0];
+                port = Integer.parseInt(Parts[1]);
+            }
+            LOG.debug("send(), Parts={}, Parts.length={}, authority:host={}, port={}", Parts, Parts.length, host, port);
+            httpUri = new HttpURI(url.getProtocol(), host, port, url.getPath());
+        } else {
+            httpUri = new HttpURI(url.toString());
+        }
+        HeadersFrame headersFrame = new HeadersFrame(new MetaData.Request(method, httpUri, HttpVersion.HTTP_2,
             headers), null, getEndOfStream(method));
+        
         // we do this replacement and remove final char to be consistent with jmeter HTTP request sampler
         String headersString = headers.toString().replaceAll("\r\n", "\n");
         sampleResult.setRequestHeaders(headersString.substring(0, headersString.length() - 1));
@@ -133,12 +151,15 @@ public class HTTP2Connection {
                 for (JMeterProperty prop : headersProps) {
                     Header header = (Header) prop.getObjectValue();
                     String n = header.getName();
+                    LOG.debug("buildHeaders().header.getName()={}, Value={}", n, header.getValue());
                     if (n.startsWith(":")) {
                         LOG.warn("The specified pseudo header {} is not allowed "
                                 + "and will be ignored", n);
                     } else if (!HTTPConstants.HEADER_CONTENT_LENGTH.equalsIgnoreCase(n)) {
                         String v = header.getValue();
-                        v = v.replaceFirst(":\\d+$", ""); // remove any port
+                        if (n.equalsIgnoreCase(HTTPConstants.HEADER_HOST) == false) {
+                            v = v.replaceFirst(":\\d+$", ""); // remove any port
+                        }
                         headers.put(n, v);
                     }
                 }
