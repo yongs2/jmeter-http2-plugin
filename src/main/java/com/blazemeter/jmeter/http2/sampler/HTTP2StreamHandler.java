@@ -223,11 +223,31 @@ public class HTTP2StreamHandler extends Stream.Listener.Adapter {
 
     @Override
     public void onReset(Stream stream, ResetFrame frame) {
+        LOG.info("HTTP2StreamHandler.onReset(stream={})", stream);
         result.setResponseCode(String.valueOf(frame.getError()));
         result.setResponseMessage(ErrorCode.from(frame.getError()).name());
         result.setSuccessful(((frame.getError() == ErrorCode.NO_ERROR.code))
                 || (frame.getError() == ErrorCode.CANCEL_STREAM_ERROR.code));
         completeStream();
+    }
+
+    @Override
+    public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback) {
+        LOG.error("HTTP2StreamHandler.onFailure(stream={}, error={},reason={}, failure={})", stream, error, reason, failure);
+        // Received GoAwayFrame@1ae6bb1f,1999/no_error//REMOTELY_CLOSED 상태에서 이후 호출됨
+        // 여기서 callback.successs 나  callback.failed(failure) 를 호출하면, 
+        // GOAWAY 패킷을 전송하고 응답을 기다리려고 하나, Kong 에서는 RST 을 전송하면서, Timeout 처리됨
+    }
+
+    @Override
+    public void onClosed(Stream stream) {
+        LOG.info("HTTP2StreamHandler.onClosed(stream={})", stream);
+    }
+
+    @Override
+    public boolean onIdleTimeout(Stream stream, Throwable x) {
+        LOG.error("HTTP2StreamHandler.onIdleTimeout(stream={})", stream);
+        return true;
     }
 
     /**
