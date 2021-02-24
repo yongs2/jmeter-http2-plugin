@@ -7,7 +7,7 @@
     <groupId>com.blazemeter</groupId>
     <artifactId>jmeter-bzm-http2</artifactId>
     <packaging>jar</packaging>
-    <version>1.5.1</version>
+    <version>1.6.1</version>
     <name>HTTP/2 Sampler</name>
     <description>HTTP/2 protocol sampler</description>
     <licenses>
@@ -37,7 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <version.org.apache.jmeter.all>3.2</version.org.apache.jmeter.all>
-        <jetty.version>9.4.30.v20200611</jetty.version>
+        <jetty.version>9.4.35.v20201120</jetty.version>
         <alpn-boot.version>8.1.12.v20180117</alpn-boot.version>
     </properties>
 
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -228,7 +228,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
-                    <argLine>-Xbootclasspath/p:${project.build.directory}/test-lib/alpn-boot.jar</argLine>
+                    <!-- avoid issue with jdk 11 -->
+                    <useSystemClassLoader>false</useSystemClassLoader>
                 </configuration>
             </plugin>
         </plugins>
